@@ -5,9 +5,19 @@ import { FaAlignJustify } from "react-icons/fa";
 import { type } from "@testing-library/user-event/dist/type";
 import { clear } from "@testing-library/user-event/dist/clear";
 
+const getLocalStorage = () => {
+  const list = localStorage.getItem("list");
+  if (list) {
+    return JSON.parse(localStorage.getItem("list"));
+  } else {
+    return [];
+  }
+};
+
 function App() {
   const [name, setName] = useState("");
-  const [list, setList] = useState([]);
+  const [list, setList] = useState(getLocalStorage());
+  const [editID, setEditID] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [alert, setAlert] = useState({
     show: false,
@@ -17,10 +27,20 @@ function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name || name.trim() == "") {
+    if (!name || name.trim() === "") {
       showAlert(true, "danger", "please enter value");
     } else if (name && isEditing) {
-      // fdsg
+      setList(
+        list.map((e) => {
+          if (e.id === editID) {
+            return { ...e, title: name };
+          }
+          return e;
+        })
+      );
+      setName("");
+      setIsEditing(false);
+      showAlert(true, "success", "value changed");
     } else {
       showAlert(true, "success", "item added");
       const newItem = { id: new Date().getTime().toString(), title: name };
@@ -48,6 +68,17 @@ function App() {
     );
   };
 
+  const editItem = (id) => {
+    const specificItem = list.find((e) => e.id === id);
+    setIsEditing(true);
+    setEditID(id);
+    setName(specificItem.title);
+  };
+
+  useEffect(() => {
+    localStorage.setItem("list", JSON.stringify(list));
+  }, [list]);
+
   return (
     <section className="section-center">
       <form className="grocery-form" onSubmit={handleSubmit}>
@@ -68,7 +99,7 @@ function App() {
       </form>
       {list.length > 0 && (
         <div className="grocery-container">
-          <List items={list} removeItem={removeItem} />
+          <List items={list} removeItem={removeItem} editItem={editItem} />
           <button className="clear-btn" onClick={clearList}>
             Clear Items
           </button>
